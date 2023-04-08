@@ -96,7 +96,7 @@ function registerListener(session, options, callback = () => {}) {
 			options.onStarted(item);
 		}
 
-		item.on('updated', () => {
+		item.on('updated', (event, state) => {
 			receivedBytes = completedBytes;
 			for (const item of downloadItems) {
 				receivedBytes += item.getReceivedBytes();
@@ -127,6 +127,15 @@ function registerListener(session, options, callback = () => {}) {
 					transferredBytes: receivedBytes,
 					totalBytes
 				});
+			}
+			
+			if (state === 'interrupted') {
+				if (options.unregisterWhenDone) {
+					session.removeListener('will-download', listener);
+				}
+
+				const message = pupa(errorMessage, {filename: path.basename(filePath)});
+				callback(new Error(message));
 			}
 		});
 
